@@ -15,9 +15,9 @@ body { font: normal normal normal 100% Arial, serif;  margin:0;}
 <script type="text/javascript" src="the8.js"></script>
 <script type="text/javascript">
 
-    var repeat = bee.getfn("repeat"),
-        rangeIterator = bee.getfn("rangeIterator"),
-        feed = bee.getfn("feed");
+    var repeat = bee.require("repeat"),
+        rangeIterator = bee.require("rangeIterator"),
+        feeding = bee.require("feeding");
 
     function sw() {
         var swc = document.querySelector(".switch");
@@ -27,7 +27,11 @@ body { font: normal normal normal 100% Arial, serif;  margin:0;}
         button.style.width = Math.floor(swc.clientWidth / 2) + "px";
         button.style.display = "block";
         swc.onclick = function () {
-            repeat(feed(function(v){ button.style.left = v + "px";}, ar.reverse()), 5, ar.length);
+            repeat(feeding(function(v){ button.style.left = v + "px";}, ar.reverse()), 5, ar.length)
+            .repeat(
+            	  feeding(function (v) { swc.style.boxShadow = v +"px " + v + "px "+ v +"px silver"; }, [0,1,2,3]),
+            	  100, 4
+            );
         };
         
         document.getElementById("numbers").onclick = countup;
@@ -36,37 +40,36 @@ body { font: normal normal normal 100% Arial, serif;  margin:0;}
 
     function countup() {
     	var node = document.getElementById("numbers");
-    	repeat(feed(function(v) {
-    		node.innerText = v;
-    	}, rangeIterator(0, 1000, 13)), 13, 79);
+    	repeat(
+    			feeding(function(v) {
+		    			node.innerText = v;
+		    	}, rangeIterator(0, 1000, 13)), 13, 79
+    	);
+    	repeat(
+    			feeding(function (v) { node.style.textShadow = v +"px " + v + "px "+ v +"px silver"; }, [0,1,2,3]),
+      	  250, 4
+      )
     }
     
     function boxtransform () {
-    var node = document.getElementById("box");
+    var nodestyle = document.getElementById("box").style,
+        setWidth = function (v) {nodestyle.width = v + "px";},
+        setHeight = function (v) {nodestyle.height = v + "px";};
 
     	repeat(
-            feed(function(v) {
-                node.style.width = v +"px";
-            }, rangeIterator(50, 200, 2) ),
-            10, 75
-        ).then(function () {
-            repeat(
-                feed(function(v) {
-                    node.style.height = v +"px";
-                }, rangeIterator(50, 200, 2) ),
-                10, 75);
-
-            repeat(
-                feed(function(v) {
-                    node.style.width = v +"px";
-                }, rangeIterator(200, 50, -2) ),
-                10, 75
-            ).repeat(
-                feed(function(v) {
-                    node.style.height = v +"px";
-                }, rangeIterator(200, 50, -2) ),
-                5, 75
-            );
+      	  feeding(function (v) { nodestyle.boxShadow = v +"px " + v + "px "+ v +"px silver"; }, [0,1,2,3]),
+      	  25, 4
+      );repeat(
+            feeding(setWidth, rangeIterator(50, 200, 2) ), 10, 76
+      ).then(function () {
+		      repeat(
+		          feeding(setHeight, rangeIterator(50, 200, 2) ), 5, 76
+		      );
+		      repeat(
+		          feeding(setWidth, rangeIterator(200, 50, -2) ), 10, 76
+		      ).repeat(
+		          feeding(setHeight, rangeIterator(200, 50, -2) ), 5, 76
+		      );
     	});
     }
 </script>
