@@ -25,17 +25,14 @@ var defer = (function () {
         };
     }());
 
-    /*  Make arguments to an array or use the only array parameter */
-    function getArgsArray (args, i) {
-        i = i || 0;
-        return (args.length === 1 && args[0] instanceof Array) ? args[0].slice(i)
-            : slicefn.call(args, i);
+    function getArgs(args, i) {
+        return slicefn.call(args, i || 0);
     }
 
     function currying(fn) {
-    var carryArgs = getArgsArray(arguments, 1);
+    var carryArgs = getArgs(arguments, 1);
         return function () {
-            return fn.apply(this, carryArgs.concat( getArgsArray(arguments) ) );
+            return fn.apply(this, carryArgs.concat( getArgs(arguments) ) );
         };
     }
 
@@ -47,7 +44,7 @@ var defer = (function () {
         };
 
         this.resolve = function () {
-        var args = getArgsArray(arguments), fn;
+        var args = getArgs(arguments), fn;
             while (fn = callbacks.shift() ) fn.apply(null, args);
         };
     }
@@ -132,7 +129,7 @@ var defer = (function () {
 
         fire = function (fireFn, eventType) {
         var handlers = handlersIndex[ eventType ],
-            args = getArgsArray(arguments, 2);
+            args = getArgs(arguments, 2);
 
             if ( !handlers || handlers.length === 0) return;
 
