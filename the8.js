@@ -1,10 +1,11 @@
 
 (function (window, undefined) {
 var fnindex = {},
+    define = function (name, fn) {
+        fnindex[name] = fn;
+    },
     bee = {
-        define: function (name, fn) {
-            fnindex[name] = fn;
-        },
+        define: define,
         require: function (name) { return fnindex[name]; }
     };
 
@@ -29,6 +30,13 @@ var defer = (function () {
         i = i || 0;
         return (args.length === 1 && args[0] instanceof Array) ? args[0].slice(i)
             : slicefn.call(args, i);
+    }
+
+    function currying(fn) {
+    var carryArgs = getArgsArray(arguments, 1);
+        return function () {
+            return fn.apply(this, carryArgs.concat( getArgsArray(arguments) ) );
+        };
     }
 
     function Callback() {
@@ -90,6 +98,30 @@ var defer = (function () {
         };
     }
 
+    function loadjs (state, file) {
+    var callback = new Callback();
+
+        if (state[file]) {
+            defer(callback.resolve);
+            return callback;
+        }
+
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.async = true;
+        script.src = script._file = file;
+        script.onload = script.onreadystatechange = function() {
+            if(!this.readyState ||
+                (this.readyState == "loaded" && this.lastReadyState == "loading") || this.readyState == "complete") {
+                state[this._file] = true;
+                callback.resolve();
+            }
+            this.lastReadyState = this.readyState;
+        };
+        document.body.appendChild(script);
+        return callback;
+    }
+
     // pub/sub pattern
     function Emiter () {
     var fireNow = function (fn) { fn(); },
@@ -98,8 +130,9 @@ var defer = (function () {
 
         handlersIndex = {},
 
-        fire = function (eventType, args, fireFn) {
-        var handlers = handlersIndex[ eventType ];
+        fire = function (fireFn, eventType) {
+        var handlers = handlersIndex[ eventType ],
+            args = getArgsArray(arguments, 2);
 
             if ( !handlers || handlers.length === 0) return;
 
@@ -111,20 +144,12 @@ var defer = (function () {
                 }
             });
         },
-
-        emit = function (eventType) {
-        var args = carryArgs.concat( slicefn.call(arguments, 1) );
-            fire(eventType, args, defer);
-        },
         
-        instance = this == window ? emit : this;
+        instance = this == window ? {} : this;
 
-        instance.emit = emit;
+        instance.emit = currying(fire, defer);
 
-        instance.fire = function (eventType) {
-        var args = carryArgs.concat( slicefn.call(arguments, 1) );
-            fire(eventType, args, fireNow);
-        };
+        instance.fire = currying(fire, fireNow);
 
         instance.addEventListener = function (eventType, callback, prepend) {
         var handlers = handlersIndex[ eventType ];
@@ -141,13 +166,15 @@ var defer = (function () {
         return instance;
     }
 
-    bee.define("defer", defer);
-    bee.define("iterator", iterator);
-    bee.define("feeding", feeding);
-    bee.define("repeat", repeat);
-    bee.define("rangeIterator", rangeIterator);
-    bee.define("Callback", Callback);
-    bee.define("Emiter", Emiter);
+    define("defer", defer);
+    define("currying", currying);
+    define("iterator", iterator);
+    define("feeding", feeding);
+    define("repeat", repeat);
+    define("rangeIterator", rangeIterator);
+    define("Callback", Callback);
+    define("Emiter", Emiter);
+    define("loadjs", currying(loadjs, {}));
     
     window.bee = bee;
 }(window))
