@@ -4,9 +4,14 @@ var fnindex = {},
     define = function (name, fn) {
         fnindex[name] = fn;
     },
+    require = function (name) { return fnindex[name]; },
     bee = {
         define: define,
-        require: function (name) { return fnindex[name]; }
+        require: require,
+        equip: function (names) {
+        var names = names.split(/\s+/), name;
+            while( name = names.shift() ) this[name] = require(name);
+        }
     };
 
 var slicefn = Array.prototype.slice;
@@ -163,6 +168,27 @@ var defer = (function () {
         return instance;
     }
 
+    /* usage: mix ( initfn, ["methoda", fna, "methodb", fnb, ...], [...], ... ); */
+    function mix (initfn) {
+    var methodsdefs = getArgs(arguments, 1);
+
+    return function () {
+        var args = getArgs(arguments),
+            instance = this,
+            carryArgs = initfn.apply(instance, args);
+
+            methodsdefs.forEach(function (methods) {
+                var name, fn, i = 0, len = methods.length;
+                for (; i < len; i++) {
+                    name = methods[i];
+                    fn = methods[++i];
+
+                    instance[name] = carryArgs.length === 0 ? fn : currying.apply(null, [fn].concat(carryArgs) );
+                }
+            });
+        };
+    }
+
     define("defer", defer);
     define("currying", currying);
     define("iterator", iterator);
@@ -172,6 +198,7 @@ var defer = (function () {
     define("Callback", Callback);
     define("Emiter", Emiter);
     define("loadjs", currying(loadjs, {}));
+    define("mix", mix);
     
     window.bee = bee;
 }(window))
